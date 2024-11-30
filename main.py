@@ -16,13 +16,21 @@ auth_token = os.getenv("auth_token")
 
 alpha_vantage_key =  os.getenv("alpha_vantage_key")
 
-url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=TSLA&apikey={alpha_vantage_key}"
+stock_url = "https://www.alphavantage.co/query"
+stock_params = {
+    "function": "TIME_SERIES_DAILY",
+    "symbol": "TSLA",
+    "apikey":alpha_vantage_key
+}
 
-
-response = requests.get(url)
+response = requests.get(stock_url, params=stock_params)
 data = response.json()
-yesterday = data["Time Series (Daily)"]['2024-11-29']["4. close"]
-day_before_yesterday_closing = data["Time Series (Daily)"]['2024-11-27']["4. close"]
+
+data_list = [(key, value) for (key, value) in data["Time Series (Daily)"].items()]
+
+
+yesterday = data_list[0][1]["4. close"]
+day_before_yesterday_closing = data_list[1][1]["4. close"]
 
 change = (float(yesterday) - float(day_before_yesterday_closing))/float(yesterday) * 100
 
@@ -35,16 +43,26 @@ if abs(change) >= 2:
     news_key = os.getenv("news_key")
 
 
-    url = (f"https://newsapi.org/v2/everything?q='tesla stock'&from=2024-11-29&to=2024-11-29&language=en&sortBy=relevancy&apiKey={news_key}")
+    news_url = "https://newsapi.org/v2/everything"
 
-    response = requests.get(url)
+    news_params = {
+        "q":"tesla stock",
+        "from":data_list[0][0],
+        "to":data_list[0][0],
+        "language":"en",
+        "sortBy":"relevancy",
+        "apiKey":news_key
+    }
+
+
+    response = requests.get(news_url, params=news_params)
 
     data = response.json()
 
     title = data["articles"][0]["title"]
     description = data["articles"][0]["description"]
 
-    print(f"Tesla {round(change, 2)}%\nHeadline: {title}\nBrief: {description}")
+    #print(f"Tesla {round(change, 2)}%\nHeadline: {title}\nBrief: {description}")
 
     client = Client(account_sid, auth_token)
 
